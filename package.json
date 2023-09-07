@@ -49,7 +49,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/pozil/pub-sub-api-node-client"
+        "url": "git+https://github.com/rjruigrok/pub-sub-api-node-client"
     },
     "volta": {
         "node": "18.12.1",
