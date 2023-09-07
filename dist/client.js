@@ -634,15 +634,16 @@ var PubSubApiClient = class {
    */
   async #fetchEventSchemaWithClient(topicName) {
     return new Promise((resolve, reject) => {
+      
+      // CP: Workaround to make channel /data/FilteredChannel__chn to fetch the right schema.
+      topicName = { topicName: '/data/ContactChangeEvent' };
+
       this.#client.GetTopic({ topicName }, (topicError, response) => {
         if (topicError) {
           reject(topicError);
         } else {
           const { schemaId } = response;
-          
-          // CP: Workaround to make channel /data/FilteredChannel__chn to fetch the right schema.
-          topicName = { topicName: '/data/ContactChangeEvent' };
-    
+        
           this.#client.GetSchema({ schemaId }, (schemaError, res) => {
             if (schemaError) {
               reject(schemaError);
