@@ -667,7 +667,7 @@ var PubSubApiClient = class {
    */
   async #fetchEventSchemaWithClient(topicName) {
     return new Promise((resolve, reject) => {
-      this.#client.GetTopic({ topicName }, (topicError, response) => {
+      this.#client.GetTopic({ topicName : '/data/ContactChangeEvent' }, (topicError, response) => {
         if (topicError) {
           reject(topicError);
         } else {
