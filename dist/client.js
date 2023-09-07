@@ -638,7 +638,7 @@ var PubSubApiClient = class {
       // CP: Workaround to make channel /data/FilteredChannel__chn to fetch the right schema.
       topicName = { topicName: '/data/ContactChangeEvent' };
 
-      this.#client.GetTopic({ topicName }, (topicError, response) => {
+      this.#client.GetTopic(topicName, (topicError, response) => {
         if (topicError) {
           reject(topicError);
         } else {
