@@ -377,7 +377,23 @@ export default class PubSubApiClient {
                         if (schemaError) {
                             reject(schemaError);
                         } else {
-                            const schemaType = avro.parse(res.schemaJson);
+                            
+                            // Long type support (by just implementing it as 32 bit, we know: information could get lost!)
+                            var longtypedef = {
+                              fromBuffer: (buf) => buf.readInt32BE(0), // Read as a 32-bit integer
+                              toBuffer: (n) => {
+                                const buf = Buffer.alloc(4); // Create a 4-byte buffer for a 32-bit integer
+                                buf.writeInt32BE(n, 0); // Write the integer to the buffer
+                                return buf;
+                              },
+                              fromJSON: function(n) { return parseInt(n, 10); }, // Parse the string to an integer
+                              toJSON: function(n) { return n; }, // Return the integer as is
+                              isValid: (n) => typeof n == 'number', // Check for number type
+                              compare: (n1, n2) => { return n1 === n2 ? 0 : (n1 < n2 ? -1 : 1); }
+                            };
+                            const longType = avro.types.LongType.using(longtypedef);
+
+                            const schemaType = avro.parse(res.schemaJson, {registry: {'long': longType}});
                             this.#logger.info(
                                 `Topic schema loaded: ${topicName}`
                             );
