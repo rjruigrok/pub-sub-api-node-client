@@ -1,16 +1,49 @@
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+
 // src/client.js
-import crypto2 from "crypto";
-import { EventEmitter } from "events";
-import fs2 from "fs";
-import { fileURLToPath } from "url";
-import avro2 from "avro-js";
-import certifi from "certifi";
-import grpc from "@grpc/grpc-js";
-import protoLoader from "@grpc/proto-loader";
+var client_exports = {};
+__export(client_exports, {
+  default: () => PubSubApiClient
+});
+module.exports = __toCommonJS(client_exports);
+var import_crypto2 = __toESM(require("crypto"), 1);
+var import_events = require("events");
+var import_fs2 = __toESM(require("fs"), 1);
+var import_url = require("url");
+var import_avro_js2 = __toESM(require("avro-js"), 1);
+var import_certifi = __toESM(require("certifi"), 1);
+var import_grpc_js = __toESM(require("@grpc/grpc-js"), 1);
+var import_proto_loader = __toESM(require("@grpc/proto-loader"), 1);
 
 // src/configuration.js
-import * as dotenv from "dotenv";
-import fs from "fs";
+var dotenv = __toESM(require("dotenv"), 1);
+var import_fs = __toESM(require("fs"), 1);
 var AUTH_USER_SUPPLIED = "user-supplied";
 var AUTH_USERNAME_PASSWORD = "username-password";
 var AUTH_OAUTH_CLIENT_CREDENTIALS = "oauth-client-credentials";
@@ -70,7 +103,7 @@ var Configuration = class _Configuration {
   static getSfPrivateKey() {
     try {
       const keyPath = process.env.SALESFORCE_PRIVATE_KEY_FILE;
-      return fs.readFileSync(keyPath, "utf8");
+      return import_fs.default.readFileSync(keyPath, "utf8");
     } catch (error) {
       throw new Error("Failed to load private key file", {
         cause: error
@@ -102,7 +135,24 @@ var Configuration = class _Configuration {
 };
 
 // src/eventParser.js
-import avro from "avro-js";
+var import_avro_js = __toESM(require("avro-js"), 1);
+
+
+// Long type support (by just implementing it as 32 bit, we know: information could get lost!)
+var longtypedef = {
+  fromBuffer: (buf) => buf.readInt32BE(0), // Read as a 32-bit integer
+  toBuffer: (n) => {
+    const buf = Buffer.alloc(4); // Create a 4-byte buffer for a 32-bit integer
+    buf.writeInt32BE(n, 0); // Write the integer to the buffer
+    return buf;
+  },
+  fromJSON: function(n) { return parseInt(n, 10); }, // Parse the string to an integer
+  toJSON: function(n) { return n; }, // Return the integer as is
+  isValid: (n) => typeof n == 'number', // Check for number type
+  compare: (n1, n2) => { return n1 === n2 ? 0 : (n1 < n2 ? -1 : 1); }
+};
+const longType = import_avro_js.types.LongType.using(longtypedef);
+
 function parseEvent(schema, event) {
   const allFields = schema.type.getFields();
   const replayId = decodeReplayId(event.replayId);
@@ -170,7 +220,7 @@ function getChildFields(parentField) {
   const types = parentField._type.getTypes();
   let fields = [];
   types.forEach((type) => {
-    if (type instanceof avro.types.RecordType) {
+    if (type instanceof import_avro_js.default.types.RecordType) {
       fields = fields.concat(type.getFields());
     }
   });
@@ -217,9 +267,9 @@ function hexToBin(hex) {
 }
 
 // src/auth.js
-import crypto from "crypto";
-import jsforce from "jsforce";
-import { fetch } from "undici";
+var import_crypto = __toESM(require("crypto"), 1);
+var import_jsforce = __toESM(require("jsforce"), 1);
+var import_undici = require("undici");
 var SalesforceAuth = class _SalesforceAuth {
   /**
    * Authenticates with the auth mode specified in configuration
@@ -241,7 +291,7 @@ var SalesforceAuth = class _SalesforceAuth {
    * @returns {ConnectionMetadata}
    */
   static async #authWithUsernamePassword() {
-    const sfConnection = new jsforce.Connection({
+    const sfConnection = new import_jsforce.default.Connection({
       loginUrl: Configuration.getSfLoginUrl()
     });
     await sfConnection.login(
@@ -279,7 +329,7 @@ var SalesforceAuth = class _SalesforceAuth {
       exp: Math.floor(Date.now() / 1e3) + 60 * 5
     });
     let token = `${base64url(header)}.${base64url(claims)}`;
-    const sign = crypto.createSign("RSA-SHA256");
+    const sign = import_crypto.default.createSign("RSA-SHA256");
     sign.update(token);
     sign.end();
     token += `.${base64url(sign.sign(Configuration.getSfPrivateKey()))}`;
@@ -292,7 +342,7 @@ var SalesforceAuth = class _SalesforceAuth {
    * @returns {ConnectionMetadata} connection metadata
    */
   static async #authWithOAuth(body) {
-    const loginResponse = await fetch(
+    const loginResponse = await (0, import_undici.fetch)(
       `${Configuration.getSfLoginUrl()}/services/oauth2/token`,
       {
         method: "post",
@@ -308,7 +358,7 @@ var SalesforceAuth = class _SalesforceAuth {
       );
     }
     const { access_token, instance_url } = await loginResponse.json();
-    const userInfoResponse = await fetch(
+    const userInfoResponse = await (0, import_undici.fetch)(
       `${Configuration.getSfLoginUrl()}/services/oauth2/userinfo`,
       {
         headers: { authorization: `Bearer ${access_token}` }
@@ -423,23 +473,23 @@ var PubSubApiClient = class {
    */
   async #connectToPubSubApi(conMetadata) {
     try {
-      const rootCert = fs2.readFileSync(certifi);
-      const protoFilePath = fileURLToPath(
-        new URL("./pubsub_api-961def31.proto?hash=961def31", import.meta.url)
+      const rootCert = import_fs2.default.readFileSync(import_certifi.default);
+      const protoFilePath = (0, import_url.fileURLToPath)(
+        new URL("./pubsub_api-961def31.proto?hash=961def31", "file://" + __filename)
       );
-      const packageDef = protoLoader.loadSync(protoFilePath, {});
-      const grpcObj = grpc.loadPackageDefinition(packageDef);
+      const packageDef = import_proto_loader.default.loadSync(protoFilePath, {});
+      const grpcObj = import_grpc_js.default.loadPackageDefinition(packageDef);
       const sfdcPackage = grpcObj.eventbus.v1;
       const metaCallback = (_params, callback) => {
-        const meta = new grpc.Metadata();
+        const meta = new import_grpc_js.default.Metadata();
         meta.add("accesstoken", conMetadata.accessToken);
         meta.add("instanceurl", conMetadata.instanceUrl);
         meta.add("tenantid", conMetadata.organizationId);
         callback(null, meta);
       };
-      const callCreds = grpc.credentials.createFromMetadataGenerator(metaCallback);
-      const combCreds = grpc.credentials.combineChannelCredentials(
-        grpc.credentials.createSsl(rootCert),
+      const callCreds = import_grpc_js.default.credentials.createFromMetadataGenerator(metaCallback);
+      const combCreds = import_grpc_js.default.credentials.combineChannelCredentials(
+        import_grpc_js.default.credentials.createSsl(rootCert),
         callCreds
       );
       this.#client = new sfdcPackage.PubSub(
@@ -515,7 +565,7 @@ var PubSubApiClient = class {
       this.#logger.info(
         `Subscribe request sent for ${subscribeRequest.numRequested} events from ${subscribeRequest.topicName}...`
       );
-      const eventEmitter = new EventEmitter();
+      const eventEmitter = new import_events.EventEmitter();
       subscription.on("data", (data) => {
         if (data.events) {
           const latestReplayId = decodeReplayId(data.latestReplayId);
@@ -567,7 +617,7 @@ var PubSubApiClient = class {
         throw new Error("Pub/Sub API client is not connected.");
       }
       const schema = await this.#getEventSchema(topicName);
-      const id = correlationKey ? correlationKey : crypto2.randomUUID();
+      const id = correlationKey ? correlationKey : import_crypto2.default.randomUUID();
       const response = await new Promise((resolve, reject) => {
         this.#client.Publish(
           {
@@ -634,17 +684,16 @@ var PubSubApiClient = class {
    */
   async #fetchEventSchemaWithClient(topicName) {
     return new Promise((resolve, reject) => {
-      this.#client.GetTopic({topicName : '/data/ContactChangeEvent'}, (topicError, response) => {
+      this.#client.GetTopic({ topicName : '/data/ContactChangeEvent' }, (topicError, response) => {
         if (topicError) {
           reject(topicError);
         } else {
           const { schemaId } = response;
-        
           this.#client.GetSchema({ schemaId }, (schemaError, res) => {
             if (schemaError) {
               reject(schemaError);
             } else {
-              const schemaType = avro2.parse(res.schemaJson);
+              const schemaType = import_avro_js2.default.parse(res.schemaJson, {registry: {'long': longType}});
               this.#logger.info(
                 `Topic schema loaded: ${topicName}`
               );
@@ -658,7 +707,4 @@ var PubSubApiClient = class {
       });
     });
   }
-};
-export {
-  PubSubApiClient as default
 };
